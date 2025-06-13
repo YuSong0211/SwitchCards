@@ -103,8 +103,43 @@
 
 - (void)handlePan:(UIPanGestureRecognizer *)gesture {
     if (self.isAnimating) return;
+    UIImageView *currentImageView = self.imageViews[self.currentIndex];
+       CGPoint translation = [gesture translationInView:self];
+    static CGAffineTransform originalTransform;
     
     switch (gesture.state) {
+        case UIGestureRecognizerStateBegan: {
+                 // 记录原始变换
+                 originalTransform = currentImageView.transform;
+                 break;
+             }
+        case UIGestureRecognizerStateChanged: {
+                 // 只处理水平方向的移动，限制在30px范围内
+                 CGFloat maxDistance = 30.0;
+                 CGFloat horizontalDistance = fabs(translation.x);
+                 CGFloat verticalDistance = fabs(translation.y);
+
+                 CGFloat limitedX = translation.x;
+                 CGFloat limitedY = translation.y;
+
+                 NSLog(@"===%f",limitedX);
+                 NSLog(@"===%f",translation.y);
+
+                 if (horizontalDistance > maxDistance) {
+                     // 限制水平移动距离
+                     limitedX = translation.x > 0 ? maxDistance : -maxDistance;
+                 }
+                 
+                if (verticalDistance > maxDistance) {
+                    // 限制水平移动距离
+                    limitedY = translation.y > 0 ? maxDistance : -maxDistance;
+                }
+                 // 只进行水平移动，保持原始旋转角度
+                 CGAffineTransform currentTransform = originalTransform;
+                 currentTransform = CGAffineTransformTranslate(currentTransform, limitedX, limitedY);
+                 currentImageView.transform = currentTransform;
+                 break;
+             }
         case UIGestureRecognizerStateEnded:
         case UIGestureRecognizerStateCancelled:
         {
@@ -127,6 +162,23 @@
 //            if (distance > distanceThreshold || speed > speedThreshold) {
 //                [self triggerCardAnimation];
 //            }
+            // 获取当前移动距离
+            CGFloat horizontalDistance = fabs(translation.x);
+            
+            // 如果移动距离超过阈值（25px），触发飞出动画
+            if (horizontalDistance > 25.0) {
+                [self triggerCardAnimation];
+            } else {
+                // 恢复原位
+                [UIView animateWithDuration:0.3
+                                    delay:0
+                   usingSpringWithDamping:0.7
+                    initialSpringVelocity:0.5
+                                  options:UIViewAnimationOptionCurveEaseOut
+                               animations:^{
+                    currentImageView.transform = originalTransform;
+                } completion:nil];
+            }
             break;
         }
         default:
